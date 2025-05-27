@@ -1,0 +1,105 @@
+﻿@using InventoryReport.Data
+@using InventoryReport.Services
+
+
+@page "/"
+@rendermode InteractiveServer
+
+@inject IInventoryService InventoryService
+
+<PageTitle>Inventory</PageTitle>
+
+<h1>Inventory</h1>
+
+<div class="inventory-container">
+
+    <div class="filters-container">
+        <div class="search-box">
+            <svg class="search-icon" viewBox="0 0 24 24">
+                <path d="M15.5 14h-.79l-.28-.27a6.5 6.5 0 0 0 1.48-5.34c-.47-2.78-2.79-5-5.59-5.34a6.505 6.505 0 0 0-7.27 7.27c.34 2.8 2.56 5.12 5.34 5.59a6.5 6.5 0 0 0 5.34-1.48l.27.28v.79l4.25 4.25c.41.41 1.08.41 1.49 0 .41-.41.41-1.08 0-1.49L15.5 14zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" />
+            </svg>
+            <input type="text"
+                   placeholder="Search all columns..."
+                   @bind="searchTerm"
+                   @bind:event="oninput"
+                   class="search-input" />
+        </div>
+
+        <div class="date-filters">
+            <div class="date-filter">
+                <label>From:</label>
+                <input type="date" @bind="startDate" class="date-input" />
+            </div>
+            <div class="date-filter">
+                <label>To:</label>
+                <input type="date" @bind="endDate" class="date-input" />
+            </div>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="inventory-table">
+            <thead>
+                <tr>
+                    <th @onclick="@(() => SortBy("Id"))">ID @SortIcon("Id")</th>
+                    <th @onclick="@(() => SortBy("Date"))">Date @SortIcon("Date")</th>
+                    <th @onclick="@(() => SortBy("CI"))">CI @SortIcon("CI")</th>
+                    <th @onclick="@(() => SortBy("DocType"))">Type @SortIcon("DocType")</th>
+                    <th @onclick="@(() => SortBy("Cargo"))">Cargo @SortIcon("Cargo")</th>
+                    <th @onclick="@(() => SortBy("Weight"))">Weight @SortIcon("Weight")</th>
+                    <th @onclick="@(() => SortBy("Parcels"))">Parcels @SortIcon("Parcels")</th>
+                    <th @onclick="@(() => SortBy("Value"))">Value @SortIcon("Value")</th>
+                    <th @onclick="@(() => SortBy("Customer"))">Customer @SortIcon("Customer")</th>
+                    <th @onclick="@(() => SortBy("DateLeft"))">Left @SortIcon("DateLeft")</th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (FilteredItems.Any())
+                {
+                    foreach (var item in FilteredItems)
+                    {
+                        <tr @onclick="@(() => OnRowClick(item))" class="@(selectedItem == item ? "selected" : "")">
+                            <td>@item.Id</td>
+                            <td>@item.Date.ToShortDateString()</td>
+                            <td>@item.CI</td>
+                            <td>@item.DocType</td>
+                            <td>@item.Cargo</td>
+                            <td>@($"{item.Weight:F2} kg")</td>
+                            <td>@item.Parcels</td>
+                            <td>@($"€{item.Value:F2}")</td>
+                            <td>@item.Customer</td>
+                            <td>@(item.DateLeft?.ToShortDateString() ?? "-")</td>
+                        </tr>
+                        @if (ExpandedItem == item)
+                        {
+                            <tr class="expanded-row">
+                                <td colspan="10">
+                                    <div class="expanded-content">
+                                        <strong>Additional Details</strong><br />
+                                        CI: @item.CI<br />
+                                        Cargo: @item.Cargo<br />
+                                        Notes: No additional notes for now.
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                }
+                else
+                {
+                    <tr class="no-results">
+                        <td colspan="10">No items found matching your criteria</td>
+                    </tr>
+                }
+            </tbody>
+
+        </table>
+    </div>
+
+    @if (FilteredItems.Any())
+    {
+        <div class="table-footer">
+            Showing @FilteredItems.Count() of @Items.Count items
+        </div>
+    }
+</div>
