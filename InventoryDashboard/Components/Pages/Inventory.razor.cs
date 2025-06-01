@@ -12,6 +12,19 @@ namespace InventoryDashboard.Components.Pages
             Items = await InventoryService.GetInventoryItemsAsync();
         }
 
+        public int CurrentPage { get; set; } = 1;
+        public int PageSize { get; set; } = 10;
+        public int TotalPages => (int)Math.Ceiling(FilteredItemsUnpaginated.Count() / (double)PageSize);
+
+        public IEnumerable<InventoryItem> FilteredItemsUnpaginated =>
+            GetSortedItems(Items.Where(CombinedFilter));
+
+        public IEnumerable<InventoryItem> FilteredItems =>
+            FilteredItemsUnpaginated
+                .Skip((CurrentPage - 1) * PageSize)
+                .Take(PageSize);
+
+
         [Parameter] public List<InventoryItem> Items { get; set; } = new();
         [Parameter] public EventCallback<InventoryItem> OnRowSelected { get; set; }
 
@@ -26,9 +39,30 @@ namespace InventoryDashboard.Components.Pages
             }
         }
 
+        private DateTime? _startDate;
+        public DateTime? startDate
+        {
+            get => _startDate;
+            set
+            {
+                _startDate = value;
+                StateHasChanged();
+            }
+        }
+
+        private DateTime? _endDate;
+        public DateTime? endDate
+        {
+            get => _endDate;
+            set
+            {
+                _endDate = value;
+                StateHasChanged();
+            }
+        }
+
+
         public CancellationTokenSource? _debounceCts;
-        public DateTime? startDate;
-        public DateTime? endDate;
         public string? sortColumn;
         public bool sortAscending = true;
         public InventoryItem? selectedItem;
@@ -49,9 +83,6 @@ namespace InventoryDashboard.Components.Pages
                 // Debounced
             }
         }
-
-        public IEnumerable<InventoryItem> FilteredItems =>
-            GetSortedItems(Items.Where(FilterFunc));
 
         public IOrderedEnumerable<InventoryItem> GetSortedItems(IEnumerable<InventoryItem> items)
         {
@@ -96,6 +127,17 @@ namespace InventoryDashboard.Components.Pages
                 || CheckMatch(item.DateLeft?.ToString("d"), term);
         }
 
+        public bool CombinedFilter(InventoryItem item)
+        {
+            bool matchesSearch = string.IsNullOrWhiteSpace(searchTerm) || FilterFunc(item);
+
+            bool matchesDate = true;
+            if (startDate.HasValue && endDate.HasValue)
+                matchesDate = item.Date >= startDate.Value && item.Date <= endDate.Value;
+
+            return matchesSearch && matchesDate;
+        }
+
         public static bool CheckMatch(string? value, string term) =>
             !string.IsNullOrEmpty(value) && value.ToLowerInvariant().Contains(term);
 
@@ -135,5 +177,28 @@ namespace InventoryDashboard.Components.Pages
 
             await OnRowSelected.InvokeAsync(item);
         }
+
+        public void NextPage()
+        {
+            if (CurrentPage < TotalPages)
+            {
+                CurrentPage++;
+                StateHasChanged();
+            }
+        }
+
+        public void PrevPage()
+        {
+            if (CurrentPage > 1)
+            {
+                CurrentPage--;
+                StateHasChanged();
+            }
+        }
+
+        public bool CanGoNext => CurrentPage < TotalPages;
+        public bool CanGoPrev => CurrentPage > 1;
+
+
     }
 }
