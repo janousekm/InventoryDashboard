@@ -4,7 +4,7 @@ using System.Globalization;
 
 namespace InventoryDashboard.Components.Pages
 {
-    public partial class Counter
+    public partial class Inventory
     {
 
         protected override async Task OnInitializedAsync()
